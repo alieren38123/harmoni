@@ -34,7 +34,8 @@ class SpotifyDataLoader:
                     {
                         "id": p.get("id"),
                         "name": p.get("name"),
-                        "tracks_total": (p.get("tracks") or {}).get("total"),
+                        # Spotify now reports the count under "items" (formerly "tracks").
+                        "tracks_total": (p.get("items") or p.get("tracks") or {}).get("total"),
                         "owner": ((p.get("owner") or {}).get("display_name") if isinstance(p.get("owner"), dict) else None),
                         "public": p.get("public"),
                     }
@@ -164,6 +165,77 @@ class SpotifyDataLoader:
 
         return tracks
 
+    def search_albums(self, query: str, *, limit: int = 10) -> List[Dict[str, Any]]:
+        """Search the Spotify catalog for albums.
+
+        Returns dicts shaped like list_all_playlists() entries (id, name,
+        tracks_total) plus kind="album", so album results can be handled by
+        the same playlist-oriented UI code. "name" is "Artist - Title".
+        """
+
+        query = (query or "").strip()
+        if not query:
+            return []
+
+        page = self.client.search_albums(query, limit=limit)
+        items = (page.get("albums") or {}).get("items") or []
+        return [a for a in (self._normalize_album(item) for item in items) if a]
+
+    def load_album_tracks(
+        self,
+        album: Dict[str, Any],
+        *,
+        limit: int = 50,
+        max_tracks: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Return an album's tracks as dicts suitable for HARMONI workflows.
+
+        album:
+          A raw Spotify album object or a search_albums() result. Album track
+          objects are "simplified" and carry no album info, so name, release
+          date and artwork are filled in from it.
+        """
+
+        album_id = album.get("id")
+        album_info = {
+            "name": album.get("title") or album.get("name"),
+            "release_date": album.get("release_date"),
+            "images": [{"url": album["image_url"]}] if album.get("image_url") else album.get("images"),
+        }
+
+        tracks: List[Dict[str, Any]] = []
+        offset = 0
+
+        while True:
+            if max_tracks is not None and len(tracks) >= int(max_tracks):
+                break
+
+            page = self.client.album_tracks(album_id, limit=limit, offset=offset)
+            items = page.get("items") or []
+
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                normalized = self._normalize_track({**item, "album": album_info})
+                if normalized:
+                    tracks.append(normalized)
+
+            total = page.get("total")
+            if total is None:
+                break
+
+            offset += len(items)
+            if offset >= int(total):
+                break
+
+            if not items:
+                break
+
+        if max_tracks is not None and len(tracks) > int(max_tracks):
+            tracks = tracks[: int(max_tracks)]
+
+        return tracks
+
     def load_user_playlists_with_tracks(
         self,
         *,
@@ -225,6 +297,26 @@ class SpotifyDataLoader:
             seen.add(key)
             uniq.append(n)
         return ", ".join(uniq)
+
+    @classmethod
+    def _normalize_album(cls, album_obj: Any) -> Optional[Dict[str, Any]]:
+        if not isinstance(album_obj, dict) or not album_obj.get("id") or not album_obj.get("name"):
+            return None
+
+        title = str(album_obj.get("name")).strip()
+        artist = cls._normalize_artist_list(album_obj.get("artists"))
+        images = album_obj.get("images") or []
+
+        return {
+            "kind": "album",
+            "id": album_obj.get("id"),
+            "title": title,
+            "artist": artist,
+            "name": f"{artist} - {title}" if artist else title,
+            "tracks_total": album_obj.get("total_tracks"),
+            "release_date": album_obj.get("release_date"),
+            "image_url": images[0].get("url") if images and isinstance(images[0], dict) else None,
+        }
 
     @classmethod
     def _normalize_track(cls, track_obj: Any) -> Optional[Dict[str, Any]]:

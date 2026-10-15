@@ -5,6 +5,7 @@ from PySide6.QtCore import QThread, Signal
 
 from spotify_api.auth import SpotifyPKCEAuth
 from spotify_api.client import SpotifyClient
+from spotify_api.data_loader import SpotifyDataLoader
 from spotify_api.token_manager import TokenManager
 
 
@@ -16,6 +17,7 @@ class SpotifyWorker(QThread):
         playlists_loaded: Emitted when playlists are loaded
         tracks_loaded: Emitted when tracks are loaded
         liked_songs_loaded: Emitted when liked songs are loaded
+        albums_found: Emitted with album search results
         error: Emitted on error
         progress: Emitted during long operations
     """
@@ -24,6 +26,7 @@ class SpotifyWorker(QThread):
     tracks_loaded = Signal(str, list)  # playlist_id, list of track dicts
     tracks_batch = Signal(str, list)  # playlist_id, batch of tracks (streaming)
     liked_songs_loaded = Signal(list)  # List of track dicts
+    albums_found = Signal(list)  # List of album dicts (see SpotifyDataLoader.search_albums)
     error = Signal(str)  # Error message
     progress = Signal(str, int, int)  # message, current, total
 
@@ -50,6 +53,18 @@ class SpotifyWorker(QThread):
         """Queue task to fetch user's liked songs."""
         self._task = "liked_songs"
         self._task_args = {}
+        self.start()
+
+    def search_albums(self, query: str):
+        """Queue task to search the Spotify catalog for albums."""
+        self._task = "search_albums"
+        self._task_args = {"query": query}
+        self.start()
+
+    def fetch_album_tracks(self, album: dict):
+        """Queue task to fetch tracks from an album (a search_albums result)."""
+        self._task = "album_tracks"
+        self._task_args = {"album": album}
         self.start()
 
     def run(self):
@@ -90,6 +105,10 @@ class SpotifyWorker(QThread):
                 self._fetch_playlist_tracks(client)
             elif self._task == "liked_songs":
                 self._fetch_liked_songs(client)
+            elif self._task == "search_albums":
+                self._search_albums(client)
+            elif self._task == "album_tracks":
+                self._fetch_album_tracks(client)
 
         except Exception as e:
             if not self._cancelled:
@@ -112,7 +131,8 @@ class SpotifyWorker(QThread):
                     "id": item.get("id"),
                     "name": item.get("name"),
                     "owner": item.get("owner", {}).get("display_name", "Unknown"),
-                    "tracks_total": item.get("tracks", {}).get("total", 0),
+                    # Spotify now reports the count under "items" (formerly "tracks").
+                    "tracks_total": (item.get("items") or item.get("tracks") or {}).get("total", 0),
                     "image_url": item.get("images", [{}])[0].get("url") if item.get("images") else None,
                 }
                 playlists.append(playlist)
@@ -228,6 +248,26 @@ class SpotifyWorker(QThread):
 
         if not self._cancelled:
             self.liked_songs_loaded.emit(tracks)
+
+    def _search_albums(self, client: SpotifyClient):
+        """Search the catalog for albums."""
+        query = self._task_args.get("query", "")
+        self.progress.emit(f"Searching albums for \"{query}\"...", 0, 0)
+        albums = SpotifyDataLoader(client).search_albums(query)
+        if not self._cancelled:
+            self.albums_found.emit(albums)
+
+    def _fetch_album_tracks(self, client: SpotifyClient):
+        """Fetch tracks from an album, reusing the playlist track signals."""
+        album = self._task_args.get("album") or {}
+        album_id = album.get("id")
+        self.progress.emit(f"Fetching tracks from {album.get('name', '')}...", 0, 0)
+        tracks = SpotifyDataLoader(client).load_album_tracks(album)
+        if self._cancelled:
+            return
+        if tracks:
+            self.tracks_batch.emit(album_id, tracks)
+        self.tracks_loaded.emit(album_id, tracks)
 
     def cancel(self):
         """Cancel the current operation."""

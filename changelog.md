@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Album search in the Spotify tab**: Search the Spotify catalog for albums from the GUI and load or download them like playlists. Results are queued as `Artist - Album`.
+
+### Fixed
+- **Playlist track counts missing in the Spotify tab**: Spotify now reports a playlist's track count under `items` instead of `tracks`; both the GUI worker and `SpotifyDataLoader` read the new field (with fallback).
+
+### Notes
+- Playlist search was deliberately left out: Spotify blocks development-mode apps from reading tracks of playlists the user doesn't own or collaborate on (`403 Forbidden`), so results would be dead ends.
+
 ## [1.2.0] - 2026-07-30
 
 ### Added
