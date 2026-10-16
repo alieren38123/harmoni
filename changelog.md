@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - **Album search in the Spotify tab**: Search the Spotify catalog for albums from the GUI and load or download them like playlists. Results are queued as `Artist - Album`.
 
 ### Fixed
+- **Tracks from one Spotify album were tagged as different albums**: the GUI queue only kept artist/title, so each file got its own MusicBrainz guess (often a single or EP) and taggers like beets split the album apart. Queue items now carry the Spotify track dict, and files are tagged with album, album artist, track number (`n/total`) and disc number for every template (MP3, M4A, FLAC, Ogg/Opus, AAC, WAV). With the album known, the per-track MusicBrainz guess no longer runs. Spotify playlists and Liked Songs share the same normalizer, which also restores skipping nameless artists.
 - **Playlist track counts missing in the Spotify tab**: Spotify now reports a playlist's track count under `items` instead of `tracks`; both the GUI worker and `SpotifyDataLoader` read the new field (with fallback).
 
 ### Notes

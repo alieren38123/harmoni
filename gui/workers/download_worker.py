@@ -363,7 +363,10 @@ class DownloadWorker(QThread):
         try:
             from downloader.metadata import embed_track_metadata
 
+            # Source metadata (album, track number... from Spotify) plus the
+            # artist/title actually used for the download.
             track_data = {
+                **(item.metadata or {}),
                 "artist": item.artist,
                 "track": item.track
             }

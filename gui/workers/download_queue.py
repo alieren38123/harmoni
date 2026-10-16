@@ -30,6 +30,8 @@ class QueueItem:
     file_path: Optional[str] = None
     speed: str = ""  # live download speed text, e.g. "512KiB/s"
     eta: str = ""  # live estimated time remaining, e.g. "00:07"
+    # Source track dict (e.g. from Spotify: album, album_artist, track_number...) used for tagging.
+    metadata: dict = field(default_factory=dict)
 
 
 class DownloadQueue(QObject):
@@ -96,7 +98,9 @@ class DownloadQueue(QObject):
         """Check if downloads are paused."""
         return self._is_paused
 
-    def add_track(self, artist: str, track: str, playlist: Optional[str] = None) -> QueueItem:
+    def add_track(
+        self, artist: str, track: str, playlist: Optional[str] = None, metadata: Optional[dict] = None
+    ) -> QueueItem:
         """Add a single track to the queue."""
         item = QueueItem(
             id=str(uuid.uuid4()),
@@ -104,7 +108,8 @@ class DownloadQueue(QObject):
             track=track,
             playlist=playlist,
             status=DownloadStatus.PENDING,
-            progress=0
+            progress=0,
+            metadata=dict(metadata or {}),
         )
         self._items.append(item)
         self.item_added.emit(item)
@@ -113,7 +118,7 @@ class DownloadQueue(QObject):
 
     def add_item(self, artist: str, track: str, album: str = "", playlist: str = "") -> QueueItem:
         """Add a single item to the queue (alias for add_track with album support)."""
-        return self.add_track(artist, track, playlist or None)
+        return self.add_track(artist, track, playlist or None, metadata={"album": album} if album else None)
 
     def add_tracks(self, tracks: list, playlist: Optional[str] = None) -> List[QueueItem]:
         """
@@ -131,7 +136,7 @@ class DownloadQueue(QObject):
             artist = track.get("artist", "").strip()
             track_name = track.get("track", "").strip()
             if artist and track_name:
-                item = self.add_track(artist, track_name, playlist)
+                item = self.add_track(artist, track_name, playlist, metadata=track)
                 items.append(item)
         return items
 

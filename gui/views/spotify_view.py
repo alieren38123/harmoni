@@ -712,6 +712,7 @@ class SpotifyView(QWidget):
                 track.get("artist", "").strip(),
                 track.get("track", "").strip(),
                 playlist_name,
+                metadata=track,
             )
             QMessageBox.information(
                 self, "Added to Queue",

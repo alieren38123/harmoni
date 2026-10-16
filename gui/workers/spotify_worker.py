@@ -173,14 +173,9 @@ class SpotifyWorker(QThread):
                 if track_obj.get("is_local") or not track_obj.get("id"):
                     continue
 
-                artists = [a.get("name", "") for a in track_obj.get("artists", [])]
-                track = {
-                    "artist": ", ".join(artists) if artists else "Unknown Artist",
-                    "track": track_obj.get("name", "Unknown Track"),
-                    "album": track_obj.get("album", {}).get("name", ""),
-                    "duration_ms": track_obj.get("duration_ms", 0),
-                    "spotify_id": track_obj.get("id"),
-                }
+                track = SpotifyDataLoader._normalize_track(track_obj)
+                if not track:
+                    continue
                 tracks.append(track)
                 batch.append(track)
 
@@ -224,14 +219,9 @@ class SpotifyWorker(QThread):
                 if track_obj.get("is_local") or not track_obj.get("id"):
                     continue
 
-                artists = [a.get("name", "") for a in track_obj.get("artists", [])]
-                track = {
-                    "artist": ", ".join(artists) if artists else "Unknown Artist",
-                    "track": track_obj.get("name", "Unknown Track"),
-                    "album": track_obj.get("album", {}).get("name", ""),
-                    "duration_ms": track_obj.get("duration_ms", 0),
-                    "spotify_id": track_obj.get("id"),
-                }
+                track = SpotifyDataLoader._normalize_track(track_obj)
+                if not track:
+                    continue
                 tracks.append(track)
                 batch.append(track)
 
