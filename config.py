@@ -28,6 +28,7 @@ DEFAULT_CONFIG = {
     "concurrent_downloads": 3,  # how many downloads run in parallel (1-8)
     "skip_existing_files": True,  # skip tracks already present in output_dir
     "sleep_between": 5,
+    "youtube_search_candidates": 5,  # results compared by length to find the album version; 1 = top result only
     "average_download_time": 20,
     "retry_attempts": 3,
     "retry_delay": 5,
@@ -135,6 +136,7 @@ CONFIG_SCHEMA = {
     "concurrent_downloads": {"type": int, "required": False, "min": 1, "max": 8},
     "skip_existing_files": {"type": bool, "required": False},
     "sleep_between": {"type": (int, float), "required": True, "min": 0, "max": 60},
+    "youtube_search_candidates": {"type": int, "required": False, "min": 1, "max": 20},
     "average_download_time": {"type": (int, float), "required": False, "min": 1, "max": 300},
     "retry_attempts": {"type": int, "required": False, "min": 0, "max": 10},
     "retry_delay": {"type": (int, float), "required": False, "min": 0, "max": 60},

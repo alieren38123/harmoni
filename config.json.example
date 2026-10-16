@@ -5,6 +5,7 @@
   "output_dir": "music",
   "audio_format": "mp3",
   "sleep_between": 5,
+  "youtube_search_candidates": 5,
   "average_download_time": 20,
   "retry_attempts": 3,
   "retry_delay": 5,

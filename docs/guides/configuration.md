@@ -52,6 +52,7 @@ All settings are stored in `config.json` at the project root.
 |---------|------|---------|-------|-------------|
 | `audio_format` | string | `"mp3"` | mp3, wav, flac, aac, ogg, m4a | Default audio format |
 | `sleep_between` | int | `5` | 0-60 | Seconds between downloads (rate limiting) |
+| `youtube_search_candidates` | int | `5` | 1-20 | YouTube results compared against the track's length (from Spotify or Exportify) to pick the album version over music videos or live takes; if none is within 10s, retries with the album name, then uses the top result. `1` = always use the top result |
 | `average_download_time` | int | `20` | 1-300 | Estimated time per track (for ETA) |
 
 ### Retry Settings

@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Album search in the Spotify tab**: Search the Spotify catalog for albums from the GUI and load or download them like playlists. Results are queued as `Artist - Album`.
 
+- **Length-matched YouTube search**: When a track's length is known (Spotify, Exportify CSV), downloads compare the top `youtube_search_candidates` (default 5) YouTube results and pick the one within 10s of it, skipping live/remix/cover/sped-up variants unless the track title asks for one and preferring the artist's own channel. If nothing matches, it retries once with the album name (edition suffixes stripped), then falls back to the top result as before. Applies to GUI and CLI downloads. Set `youtube_search_candidates` to `1` for the old behavior.
+
 ### Fixed
 - **Tracks from one Spotify album were tagged as different albums**: the GUI queue only kept artist/title, so each file got its own MusicBrainz guess (often a single or EP) and taggers like beets split the album apart. Queue items now carry the Spotify track dict, and files are tagged with album, album artist, track number (`n/total`) and disc number for every template (MP3, M4A, FLAC, Ogg/Opus, AAC, WAV). With the album known, the per-track MusicBrainz guess no longer runs. Spotify playlists and Liked Songs share the same normalizer, which also restores skipping nameless artists.
 - **Playlist track counts missing in the Spotify tab**: Spotify now reports a playlist's track count under `items` instead of `tracks`; both the GUI worker and `SpotifyDataLoader` read the new field (with fallback).

@@ -4,6 +4,7 @@ import time
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from utils import log_info, log_success, log_error, log_warning
+from utils.youtube_match import resolve_target
 from utils.ytdlp_args import build_extra_ytdlp_args
 from tqdm import tqdm
 
@@ -54,7 +55,7 @@ def download_track(artist, track, output_dir, audio_format, sleep_between, confi
     log_info(f"Starting download: {query}")
     cmd = [
         "yt-dlp",
-        f"ytsearch1:{query}",
+        resolve_target(artist, track, track_data, config),
         "-x",
         "--audio-format", audio_format,
         "-o", os.path.join(output_dir, f"{filename}.%(ext)s")
@@ -100,7 +101,7 @@ def _download_worker(track_dict, output_dir, audio_format, config=None):
 
     cmd = [
         "yt-dlp",
-        f"ytsearch1:{query}",
+        resolve_target(artist, track, track_dict, config),
         "-x",
         "--audio-format", audio_format,
         "-o", os.path.join(output_dir, f"{filename}.%(ext)s")

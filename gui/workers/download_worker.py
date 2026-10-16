@@ -8,6 +8,7 @@ from typing import Optional
 from PySide6.QtCore import QThread, Signal
 
 from gui.workers.download_queue import DownloadQueue, DownloadStatus, QueueItem
+from utils.youtube_match import resolve_target
 from utils.ytdlp_args import build_extra_ytdlp_args
 
 
@@ -266,7 +267,7 @@ class DownloadWorker(QThread):
 
         cmd = [
             "yt-dlp",
-            f"ytsearch1:{query}",
+            resolve_target(item.artist, item.track, item.metadata, self.config),
             "-x",
             "--audio-format", audio_format,
             "-o", os.path.join(output_dir, f"{filename}.%(ext)s"),
